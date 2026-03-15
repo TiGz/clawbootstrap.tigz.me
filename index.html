@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OpenClaw Bootstrap &mdash; Your AI Agent in 30 Minutes</title>
+  <meta name="description" content="Step-by-step guide to setting up a personal AI agent with OpenClaw, Claude Max, Paperclip, and Tailscale on your own VPS.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ─── Hero ──────────────────────────────────────────── -->
+<section class="hero">
+  <div class="wrap">
+    <div class="hero-badge">Open Source &middot; ~&pound;85/month total</div>
+    <h1>Your own AI agent,<br><span class="gradient">running 24/7</span></h1>
+    <p class="hero-sub">
+      A complete guide to setting up OpenClaw on a VPS with Claude Max, Paperclip, secure VPN access, and automatic file sync to your laptop.
+    </p>
+  </div>
+</section>
+
+<!-- ─── Architecture ──────────────────────────────────── -->
+<div class="wrap">
+  <div class="arch">
+    <div class="arch-grid">
+      <div class="arch-box">
+        <h3>Your Laptop</h3>
+        <ul>
+          <li>Syncthing</li>
+          <li>Paperclip UI</li>
+          <li>Claude Code</li>
+          <li>WhatsApp / Telegram</li>
+        </ul>
+      </div>
+      <div class="arch-arrow">
+        <span>Tailscale VPN</span>
+        <div class="line"></div>
+        <span style="font-size:0.7rem;color:var(--muted)">encrypted</span>
+      </div>
+      <div class="arch-box">
+        <h3>Your VPS</h3>
+        <ul>
+          <li>OpenClaw</li>
+          <li>Syncthing</li>
+          <li>Paperclip</li>
+          <li>Claude Max token</li>
+        </ul>
+      </div>
+    </div>
+    <div class="arch-bottom">
+      <div class="arch-pill"><span class="dot"></span> Files sync both ways</div>
+      <div class="arch-pill"><span class="dot purple"></span> GitHub workspace backup</div>
+    </div>
+  </div>
+
+  <!-- ─── Overview cards ──────────────────────────────── -->
+  <div class="overview">
+    <div class="overview-card">
+      <div class="number">A</div>
+      <h3>You do the basics</h3>
+      <p>Create accounts, order a VPS, install Tailscale, set up SSH keys.</p>
+      <span class="time">~30 minutes</span>
+    </div>
+    <div class="overview-card">
+      <div class="number">B</div>
+      <h3>Claude does the rest</h3>
+      <p>Paste a prompt into Claude Code &mdash; it SSHs into your VPS and installs everything automatically.</p>
+      <span class="time">Automated</span>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- PART A                                              -->
+  <!-- ═══════════════════════════════════════════════════ -->
+
+  <div class="part-header" id="part-a">
+    <span class="part-label you">Part A</span>
+    <h2>What you need to do</h2>
+    <p>The manual steps &mdash; about 30 minutes of your time.</p>
+  </div>
+
+  <!-- A1 ── Sign up ──────────────────────────────────── -->
+  <div class="step" id="a1">
+    <div class="step-num">Step A1</div>
+    <h3>Create your accounts</h3>
+    <p>You need four accounts. Most are free. Follow each one in order:</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>#</th><th>Service</th><th>What for</th><th>Cost</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td><a href="https://claude.ai" target="_blank">Claude Max</a></td>
+            <td>Powers your AI agent (Opus 4)</td>
+            <td>&pound;80/mo</td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td><a href="https://www.ionos.co.uk/servers/openclaw-hosting" target="_blank">IONOS VPS</a></td>
+            <td>Server to run everything</td>
+            <td>~&pound;5/mo</td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td><a href="https://tailscale.com" target="_blank">Tailscale</a></td>
+            <td>Private VPN between devices</td>
+            <td>Free</td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td><a href="https://github.com" target="_blank">GitHub</a></td>
+            <td>Workspace backup &amp; versioning</td>
+            <td>Free</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Claude Max signup -->
+    <div class="signup-block">
+      <h4>1. Claude Max</h4>
+      <p>Claude Max gives you access to Claude Opus 4 with high usage limits &mdash; this is what powers your AI agent.</p>
+      <ol>
+        <li>Go to <a href="https://claude.ai" target="_blank">claude.ai</a></li>
+        <li>Click <strong>Sign up</strong> (use your email or Google account)</li>
+        <li>Once logged in, click your name (bottom-left) &rarr; <strong>Settings</strong> &rarr; <strong>Subscription</strong></li>
+        <li>Choose <strong>Max</strong> (&pound;80/month) and enter your payment details</li>
+      </ol>
+    </div>
+
+    <!-- IONOS VPS signup -->
+    <div class="signup-block">
+      <h4>2. IONOS VPS</h4>
+      <p>This is the server your agent will live on &mdash; running 24/7 even when your laptop is off.</p>
+      <ol>
+        <li>Go to <a href="https://www.ionos.co.uk/servers/openclaw-hosting" target="_blank">ionos.co.uk/servers/openclaw-hosting</a></li>
+        <li>Pick at least the <strong>VPS Linux M</strong> &mdash; you want <strong>4 vCPU, 8 GB RAM, 160+ GB NVMe</strong></li>
+        <li>Choose <strong>Ubuntu 24.04 LTS</strong> as the operating system</li>
+        <li>Complete the checkout</li>
+      </ol>
+      <p>After ordering, IONOS will email you a <strong>VPS IP address</strong> (like <code>194.35.xx.xx</code>) and a <strong>root password</strong>. Save both &mdash; you need them soon.</p>
+      <div class="callout">
+        <strong>Why not the cheapest plan?</strong>
+        The 2 GB plan works for bare OpenClaw, but you&rsquo;re running OpenClaw + Paperclip + Syncthing. 8 GB keeps everything comfortable.
+      </div>
+    </div>
+
+    <!-- Tailscale signup -->
+    <div class="signup-block">
+      <h4>3. Tailscale</h4>
+      <p>Tailscale creates a private encrypted network between your laptop and VPS. No port forwarding, no firewall headaches.</p>
+      <ol>
+        <li>Go to <a href="https://tailscale.com" target="_blank">tailscale.com</a></li>
+        <li>Click <strong>Get Started</strong></li>
+        <li>Sign up with your <strong>Google account</strong>, <strong>Microsoft account</strong>, or <strong>email</strong></li>
+        <li>You&rsquo;ll land on a dashboard &mdash; that&rsquo;s it, account created</li>
+      </ol>
+      <div class="callout info">
+        <strong>Remember which account you used</strong>
+        You&rsquo;ll need to log into Tailscale with the same method on both your laptop and VPS. If you signed up with Google, use Google on both.
+      </div>
+    </div>
+
+    <!-- GitHub signup -->
+    <div class="signup-block">
+      <h4>4. GitHub</h4>
+      <p>GitHub stores a backup of your agent&rsquo;s workspace &mdash; its personality, skills, and memory. Free for private repos.</p>
+      <ol>
+        <li>Go to <a href="https://github.com/signup" target="_blank">github.com/signup</a></li>
+        <li>Enter your email, create a password, and choose a username</li>
+        <li>Complete the verification puzzle</li>
+        <li>Choose the <strong>Free</strong> plan (it&rsquo;s all you need)</li>
+      </ol>
+      <p>Already have a GitHub account? Skip this &mdash; just make sure you can log in.</p>
+    </div>
+  </div>
+
+  <!-- A2 ── Tailscale on VPS ─────────────────────────── -->
+  <div class="step" id="a2">
+    <div class="step-num">Step A2</div>
+    <h3>Install Tailscale on the VPS</h3>
+    <p>This is the only time you need to SSH into the VPS directly. After this, everything goes through the VPN.</p>
+
+    <h4>Open your laptop terminal</h4>
+    <p><strong>Mac:</strong> Press Cmd+Space, type &ldquo;Terminal&rdquo;, hit Enter<br>
+    <strong>Windows:</strong> Press the Windows key, type &ldquo;PowerShell&rdquo;, hit Enter</p>
+
+    <p>Connect to your VPS using the IP and password from the IONOS email:</p>
+
+<pre><code><span class="code-comment"># Replace YOUR_VPS_IP with the IP from your IONOS email</span>
+ssh root@YOUR_VPS_IP</code></pre>
+
+    <p>It&rsquo;ll ask &ldquo;Are you sure you want to continue connecting?&rdquo; &mdash; type <code>yes</code> and press Enter.<br>
+    Then paste or type the root password from the IONOS email (it won&rsquo;t show as you type &mdash; that&rsquo;s normal).</p>
+
+    <h4>Install Tailscale</h4>
+    <p>Once you&rsquo;re logged into the VPS, run these two commands:</p>
+
+<pre><code>curl -fsSL https://tailscale.com/install.sh | sh
+sudo tailscale up</code></pre>
+
+    <p>It&rsquo;ll print a URL like <code>https://login.tailscale.com/a/abc123...</code></p>
+    <p><strong>Copy that URL and open it in your browser.</strong> Log into Tailscale with the same account you created in Step A1. This connects your VPS to your private network.</p>
+    <p>Type <code>exit</code> and press Enter to disconnect from the VPS.</p>
+  </div>
+
+  <!-- A3 ── Tailscale on laptop ──────────────────────── -->
+  <div class="step" id="a3">
+    <div class="step-num">Step A3</div>
+    <h3>Install Tailscale on your laptop</h3>
+
+    <h4>Mac</h4>
+    <p>If you have Homebrew installed:</p>
+<pre><code>brew install tailscale</code></pre>
+    <p>Otherwise, download the app from <a href="https://tailscale.com/download" target="_blank">tailscale.com/download</a> and drag it to Applications.</p>
+
+    <h4>Windows</h4>
+    <p>Download the installer from <a href="https://tailscale.com/download" target="_blank">tailscale.com/download</a> and run it.</p>
+
+    <p>Sign in with the <strong>same Tailscale account</strong> you used in Step A2.</p>
+
+    <h4>Verify the connection</h4>
+<pre><code>tailscale status</code></pre>
+
+    <p>You should see your VPS listed with a <strong>100.x.x.x</strong> IP address. Write this down &mdash; that&rsquo;s your VPS&rsquo;s private IP from now on.</p>
+
+    <p>Test it:</p>
+<pre><code><span class="code-comment"># Replace with your actual Tailscale IP</span>
+ping 100.x.x.x</code></pre>
+
+    <p>If you see replies, you&rsquo;re connected. Press Ctrl+C to stop the ping.</p>
+  </div>
+
+  <!-- A4 ── SSH over Tailscale ────────────────────────── -->
+  <div class="step" id="a4">
+    <div class="step-num">Step A4</div>
+    <h3>Set up SSH over Tailscale</h3>
+    <p>Make sure you can SSH to the VPS through the VPN:</p>
+
+<pre><code><span class="code-comment"># Replace 100.x.x.x with your VPS's Tailscale IP</span>
+ssh root@100.x.x.x</code></pre>
+
+    <p>If that works, exit and <strong>set up an SSH key</strong> so Claude Code can connect without passwords:</p>
+
+<pre><code><span class="code-comment"># On your LAPTOP (exit the VPS first if connected)</span>
+
+<span class="code-comment"># Generate a key &mdash; press Enter at each prompt, no passphrase needed</span>
+ssh-keygen -t ed25519
+
+<span class="code-comment"># Copy it to your VPS (replace 100.x.x.x with your Tailscale IP)</span>
+ssh-copy-id root@100.x.x.x</code></pre>
+
+    <p>Test it:</p>
+<pre><code>ssh root@100.x.x.x "echo 'SSH key works!'"</code></pre>
+
+    <p>If it prints &ldquo;SSH key works!&rdquo; without asking for a password, you&rsquo;re golden.</p>
+  </div>
+
+  <!-- A5 ── Claude Code ───────────────────────────────── -->
+  <div class="step" id="a5">
+    <div class="step-num">Step A5</div>
+    <h3>Install Claude Code on your laptop</h3>
+
+    <h4>Install Node.js first</h4>
+    <p><strong>Mac</strong> (with Homebrew):</p>
+<pre><code>brew install node</code></pre>
+    <p><strong>Mac</strong> (without Homebrew) or <strong>Windows</strong>: Download from <a href="https://nodejs.org" target="_blank">nodejs.org</a> &mdash; pick the <strong>LTS</strong> version, run the installer.</p>
+
+    <h4>Install Claude Code</h4>
+<pre><code>npm install -g @anthropic-ai/claude-code</code></pre>
+
+    <h4>Log in</h4>
+<pre><code>claude</code></pre>
+    <p>It&rsquo;ll open a browser window to authenticate with your Claude Max account. Sign in, approve the connection, and you&rsquo;re set.</p>
+  </div>
+
+  <!-- A6 ── GitHub repo ───────────────────────────────── -->
+  <div class="step" id="a6">
+    <div class="step-num">Step A6</div>
+    <h3>Create a private GitHub repo</h3>
+    <p>Your agent&rsquo;s workspace (personality, skills, memory) will be backed up here. Version history means you can always roll back.</p>
+    <ol>
+      <li>Go to <a href="https://github.com/new" target="_blank">github.com/new</a></li>
+      <li>For <strong>Repository name</strong>, type <code>my-openclaw-workspace</code></li>
+      <li>Select <strong>Private</strong></li>
+      <li><strong>Don&rsquo;t</strong> tick &ldquo;Add a README file&rdquo; or any other boxes</li>
+      <li>Click <strong>Create repository</strong></li>
+    </ol>
+    <p>Leave that page open &mdash; you&rsquo;ll need the repo URL later (it looks like <code>https://github.com/YOUR_USERNAME/my-openclaw-workspace.git</code>).</p>
+
+    <div class="callout info">
+      <strong>Don&rsquo;t have git on your laptop?</strong>
+      Mac has it built in &mdash; open Terminal and type <code>git --version</code> to check. Windows: download from <a href="https://git-scm.com" target="_blank">git-scm.com</a>.
+    </div>
+  </div>
+
+  <!-- A7 ── Done ──────────────────────────────────────── -->
+  <div class="step" id="a7">
+    <div class="step-num">Step A7</div>
+    <h3>You&rsquo;re done with Part A!</h3>
+    <p><strong>That&rsquo;s everything you need to do manually.</strong> You should now have:</p>
+    <ul class="checklist done">
+      <li>Claude Max subscription active</li>
+      <li>IONOS VPS running with its IP address saved</li>
+      <li>Tailscale running on both laptop and VPS</li>
+      <li>Passwordless SSH working: <code>ssh root@100.x.x.x</code></li>
+      <li>Claude Code installed and logged in</li>
+      <li>An empty private GitHub repo</li>
+    </ul>
+    <p>Now move on to Part B &mdash; paste a single prompt into Claude Code and it handles everything else.</p>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- PART B                                              -->
+  <!-- ═══════════════════════════════════════════════════ -->
+
+  <div class="part-header" id="part-b">
+    <span class="part-label auto">Part B</span>
+    <h2>Let Claude Code do the rest</h2>
+    <p>Open Claude Code on your laptop, paste the prompt below, and watch it set up your entire stack.</p>
+  </div>
+
+  <!-- B-prompt ── The big prompt ──────────────────────── -->
+  <div class="step" id="b-prompt">
+    <div class="step-num">The Prompt</div>
+    <h3>Copy this into Claude Code</h3>
+    <p>Open your terminal and type <code>claude</code> to start Claude Code. Then paste this prompt (edit the values in <strong>CAPS</strong> first):</p>
+
+    <div class="prompt-block">
+<pre><code>I need you to set up a complete OpenClaw AI agent stack on my VPS. Here are my details:
+
+- VPS Tailscale IP: YOUR_TAILSCALE_IP (e.g. 100.64.0.2)
+- My username for the VPS: YOUR_NAME (lowercase, no spaces)
+- My GitHub repo: https://github.com/YOUR_USERNAME/my-openclaw-workspace.git
+- My GitHub email: YOUR_EMAIL
+
+Please SSH into the VPS at the Tailscale IP as root and do the following:
+
+## 1. Base server setup
+- apt update && apt upgrade
+- Create a non-root user with my username, add to sudo and docker groups
+- Install Docker CE and Docker Compose
+- Install Node.js 20+ and pnpm
+- Install git
+
+## 2. Install OpenClaw
+- As the non-root user, run: npx openclaw@latest init
+- Follow the setup wizard
+- Configure the model as anthropic/claude-opus-4-6
+- I will provide the setup-token when you need it (run "claude setup-token" on my laptop)
+- Start the gateway with docker compose up -d
+
+## 3. Install Paperclip
+- Clone https://github.com/paperclipai/paperclip.git
+- pnpm install
+- Configure to connect to the local OpenClaw gateway
+- Create a systemd service so it runs on boot
+- It should be accessible at http://YOUR_TAILSCALE_IP:4000
+
+## 4. Connect GitHub
+- Configure git with my name and email
+- Generate an SSH key on the VPS
+- Show me the public key so I can add it to GitHub
+- Link the OpenClaw workspace directory to my private repo
+- Set up a cron job or git hook to auto-push workspace changes
+
+## 5. Install Syncthing
+- Install Syncthing on the VPS
+- Set up as a systemd service running as my user
+- Create ~/openclaw-files/ as a shared directory
+- Configure Syncthing to only listen on the Tailscale interface
+- Show me the device ID so I can pair it with my laptop
+
+## 6. Lock down security
+- Set up UFW firewall: allow SSH only from Tailscale range (100.64.0.0/10)
+- Disable root password login via SSH
+- Ensure all services (Paperclip, Syncthing UI) only bind to the Tailscale IP
+
+## 7. Verify everything
+- Check all services are running
+- Test OpenClaw responds
+- Confirm Paperclip is accessible
+- Confirm Syncthing is running and ready to pair
+
+Go step by step. Ask me for input when needed (setup-token, QR code scanning, GitHub key approval, etc).</code></pre>
+    </div>
+  </div>
+
+  <!-- B ── What happens ───────────────────────────────── -->
+  <div class="step" id="b-steps">
+    <div class="step-num">What happens next</div>
+    <h3>Claude will walk you through it</h3>
+    <p>After pasting the prompt, Claude Code will start SSHing into your VPS and running commands. It&rsquo;ll pause and ask you for input at a few key moments:</p>
+
+    <div class="interaction-list">
+      <div class="interaction">
+        <div class="interaction-icon">1</div>
+        <div class="interaction-body">
+          <h4>Setup token</h4>
+          <p>Claude will ask you to run <code>claude setup-token</code> in a separate terminal. Copy the output and paste it back.</p>
+        </div>
+      </div>
+      <div class="interaction">
+        <div class="interaction-icon">2</div>
+        <div class="interaction-body">
+          <h4>Chat channel</h4>
+          <p>For WhatsApp: you&rsquo;ll scan a QR code with your phone. For Telegram: you&rsquo;ll create a bot via @BotFather and share the token.</p>
+        </div>
+      </div>
+      <div class="interaction">
+        <div class="interaction-icon">3</div>
+        <div class="interaction-body">
+          <h4>GitHub SSH key</h4>
+          <p>Claude will show you a public key. Copy it, go to <a href="https://github.com/settings/ssh/new" target="_blank">github.com/settings/ssh/new</a>, paste it in, and click &ldquo;Add SSH key&rdquo;.</p>
+        </div>
+      </div>
+      <div class="interaction">
+        <div class="interaction-icon">4</div>
+        <div class="interaction-body">
+          <h4>Syncthing pairing</h4>
+          <p>Claude will show you a Syncthing device ID. You&rsquo;ll add this in the Syncthing app on your laptop to pair the devices.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- B ── Syncthing on laptop ────────────────────────── -->
+  <div class="step" id="b-syncthing-laptop">
+    <div class="step-num">After setup</div>
+    <h3>Install Syncthing on your laptop</h3>
+    <p>This is the one thing you install locally (Claude can&rsquo;t install apps on your laptop):</p>
+
+    <h4>Mac</h4>
+<pre><code>brew install syncthing
+brew services start syncthing</code></pre>
+
+    <h4>Windows</h4>
+    <p>Download from <a href="https://syncthing.net/downloads" target="_blank">syncthing.net/downloads</a> and run the installer.</p>
+
+    <h4>Pair with your VPS</h4>
+    <ol>
+      <li>Open <code>http://localhost:8384</code> in your browser (Syncthing UI)</li>
+      <li>Click <strong>Add Remote Device</strong></li>
+      <li>Paste the device ID that Claude showed you</li>
+      <li>Under <strong>Addresses</strong>, change <code>dynamic</code> to:</li>
+    </ol>
+<pre><code><span class="code-comment"># Replace with your VPS's Tailscale IP</span>
+tcp://100.x.x.x:22000</code></pre>
+    <ol start="5">
+      <li>Save, then <strong>accept the shared folder</strong> when prompted</li>
+      <li>Choose where to sync on your laptop (e.g. <code>~/openclaw-files</code>)</li>
+    </ol>
+
+    <div class="callout info">
+      <strong>How it works in practice</strong>
+      You tell your agent: &ldquo;Write a business proposal.&rdquo; Seconds later, <code>~/openclaw-files/business-proposal.md</code> appears on your laptop. Open it in Word, Pages, Google Docs &mdash; whatever you prefer. Edit it there and changes sync back.
+    </div>
+  </div>
+
+  <!-- B ── Verify ─────────────────────────────────────── -->
+  <div class="step" id="b-verify">
+    <div class="step-num">Final check</div>
+    <h3>Verify everything works</h3>
+    <p>Run through this checklist:</p>
+    <ul class="checklist">
+      <li>Send a message to your agent via WhatsApp/Telegram &mdash; does it reply?</li>
+      <li>Open <code>http://YOUR_TAILSCALE_IP:4000</code> &mdash; does the Paperclip dashboard load?</li>
+      <li>Create a test file on the VPS &mdash; does it appear on your laptop?</li>
+    </ul>
+
+    <p>Quick test command you can run in a terminal:</p>
+<pre><code><span class="code-comment"># Replace 100.x.x.x and YOUR_NAME with your values</span>
+ssh YOUR_NAME@100.x.x.x 'echo "Hello from your VPS!" > ~/openclaw-files/test.txt'
+
+<span class="code-comment"># Check it appeared on your laptop:</span>
+cat ~/openclaw-files/test.txt</code></pre>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- Costs                                               -->
+  <!-- ═══════════════════════════════════════════════════ -->
+
+  <div class="part-header" id="costs">
+    <h2>Monthly costs</h2>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Service</th><th>Cost</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Claude Max</td><td>&pound;80/month</td></tr>
+        <tr><td>IONOS VPS (M plan)</td><td>~&pound;5/month</td></tr>
+        <tr><td>Tailscale</td><td>Free</td></tr>
+        <tr><td>Syncthing</td><td>Free</td></tr>
+        <tr><td>Paperclip</td><td>Free (open source)</td></tr>
+        <tr><td>GitHub (private repo)</td><td>Free</td></tr>
+        <tr class="cost-total"><td><strong>Total</strong></td><td><strong>~&pound;85/month</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- What next                                           -->
+  <!-- ═══════════════════════════════════════════════════ -->
+
+  <div class="part-header" id="next">
+    <h2>What you can do once it&rsquo;s running</h2>
+  </div>
+
+  <div class="step">
+    <h4>Talk to your agent</h4>
+    <p>Message it on WhatsApp like texting a colleague:</p>
+    <ul>
+      <li><em>&ldquo;Write a business proposal for my consulting service&rdquo;</em></li>
+      <li><em>&ldquo;Research competitors in my market and summarise the findings&rdquo;</em></li>
+      <li><em>&ldquo;Draft a follow-up email to that client&rdquo;</em></li>
+    </ul>
+
+    <h4>Get files automatically</h4>
+    <p>Anything the agent writes lands in <code>~/openclaw-files/</code> on your laptop. Open in Word, Pages, Google Docs &mdash; whatever you like.</p>
+
+    <h4>Manage via Paperclip</h4>
+    <p>Open <code>http://TAILSCALE_IP:4000</code> to see what the agent is working on, set goals, and review its output.</p>
+
+    <h4>Customise</h4>
+    <p>Give it a personality, specific skills, and recurring tasks. Edit <code>SOUL.md</code> in the workspace to define who your agent is.</p>
+
+    <h4>Scale up</h4>
+    <p>Add more agents via Paperclip &mdash; it supports multi-agent teams with org charts, budgets, and reporting lines.</p>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- Troubleshooting                                     -->
+  <!-- ═══════════════════════════════════════════════════ -->
+
+  <div class="part-header" id="troubleshooting">
+    <h2>Troubleshooting</h2>
+  </div>
+
+  <div class="step">
+    <h4>Can&rsquo;t SSH into the VPS</h4>
+    <p>Check Tailscale is running on both devices: <code>tailscale status</code>. If the VPS isn&rsquo;t listed, SSH in via the public IP temporarily and re-run <code>tailscale up</code>.</p>
+
+    <h4>&ldquo;401 Authentication Error&rdquo; from Claude</h4>
+    <p>Your setup token expired. Run <code>claude setup-token</code> on your laptop, then on the VPS:</p>
+<pre><code>openclaw models auth paste-token --provider anthropic
+<span class="code-comment"># Paste the new token, then restart OpenClaw</span></code></pre>
+
+    <h4>Syncthing not syncing</h4>
+    <p>Check both devices show &ldquo;Connected&rdquo; in the Syncthing UI. Verify device addresses use <code>tcp://TAILSCALE_IP:22000</code> not <code>dynamic</code>.</p>
+
+    <h4>VPS running slow</h4>
+    <p>SSH in and run <code>free -h</code>. If under 1 GB free, consider upgrading the IONOS plan.</p>
+
+    <h4>Can&rsquo;t access Paperclip or Syncthing UI</h4>
+    <p>Make sure you&rsquo;re using the Tailscale IP (<code>100.x.x.x</code>), not the public IP. These services only listen on the private network.</p>
+  </div>
+
+</div><!-- .wrap -->
+
+<footer>
+  <div class="wrap">
+    Built with <a href="https://openclaw.ai" target="_blank">OpenClaw</a>,
+    <a href="https://github.com/paperclipai/paperclip" target="_blank">Paperclip</a>,
+    <a href="https://tailscale.com" target="_blank">Tailscale</a> &amp;
+    <a href="https://syncthing.net" target="_blank">Syncthing</a>.
+    &mdash; <a href="https://tigz.me">tigz.me</a>
+  </div>
+</footer>
+
+<!-- ─── Copy to clipboard ─────────────────────────────── -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('pre').forEach(pre => {
+    const btn = document.createElement('button');
+    btn.className = 'copy-btn';
+    btn.textContent = 'Copy';
+    btn.setAttribute('aria-label', 'Copy to clipboard');
+
+    btn.addEventListener('click', async () => {
+      const code = pre.querySelector('code');
+      // Get text content, stripping HTML tags
+      const text = code ? code.textContent : pre.textContent;
+      try {
+        await navigator.clipboard.writeText(text.trim());
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = 'Copy';
+          btn.classList.remove('copied');
+        }, 2000);
+      } catch {
+        // Fallback for older browsers
+        const ta = document.createElement('textarea');
+        ta.value = text.trim();
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = 'Copy';
+          btn.classList.remove('copied');
+        }, 2000);
+      }
+    });
+
+    pre.style.position = 'relative';
+    pre.appendChild(btn);
+  });
+});
+</script>
+
+</body>
+</html>
