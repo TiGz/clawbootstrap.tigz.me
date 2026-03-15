@@ -30,9 +30,9 @@
       <div class="arch-box">
         <h3>Your Laptop</h3>
         <ul>
+          <li>Claude Code + Nimbalyst</li>
           <li>Syncthing</li>
           <li>Paperclip UI</li>
-          <li>Claude Code</li>
           <li>WhatsApp / Telegram</li>
         </ul>
       </div>
@@ -279,6 +279,19 @@ ssh-copy-id root@100.x.x.x</code></pre>
     <h4>Log in</h4>
 <pre><code>claude</code></pre>
     <p>It&rsquo;ll open a browser window to authenticate with your Claude Max account. Sign in, approve the connection, and you&rsquo;re set.</p>
+
+    <h4>Install Nimbalyst (visual workspace)</h4>
+    <p><a href="https://nimbalyst.com" target="_blank">Nimbalyst</a> is a free desktop app that gives you a visual workspace for Claude Code. It lets you view and edit markdown files, manage agent sessions on a kanban board, preview diagrams, and review changes your agent makes &mdash; all without touching a terminal.</p>
+    <ul>
+      <li><strong>Mac / Windows / Linux:</strong> Download from <a href="https://nimbalyst.com" target="_blank">nimbalyst.com</a></li>
+      <li><strong>iOS:</strong> Available on the App Store for managing sessions on the go</li>
+    </ul>
+    <p>Once installed, open Nimbalyst and connect it to your Claude Code instance. It&rsquo;ll automatically detect your sessions and projects.</p>
+
+    <div class="callout info">
+      <strong>Why Nimbalyst?</strong>
+      When your agent writes a business proposal or research document, Nimbalyst renders it beautifully &mdash; formatted markdown, tables, diagrams. Much nicer than reading raw <code>.md</code> files. It&rsquo;s also where you&rsquo;ll manage your Claude Code sessions visually instead of juggling terminal windows.
+    </div>
   </div>
 
   <!-- A6 ── GitHub repo ───────────────────────────────── -->
@@ -311,7 +324,7 @@ ssh-copy-id root@100.x.x.x</code></pre>
       <li>IONOS VPS running with its IP address saved</li>
       <li>Tailscale running on both laptop and VPS</li>
       <li>Passwordless SSH working: <code>ssh root@100.x.x.x</code></li>
-      <li>Claude Code installed and logged in</li>
+      <li>Claude Code and Nimbalyst installed</li>
       <li>An empty private GitHub repo</li>
     </ul>
     <p>Now move on to Part B &mdash; paste a single prompt into Claude Code and it handles everything else.</p>
@@ -503,6 +516,7 @@ cat ~/openclaw-files/test.txt</code></pre>
         <tr><td>Syncthing</td><td>Free</td></tr>
         <tr><td>Paperclip</td><td>Free (open source)</td></tr>
         <tr><td>GitHub (private repo)</td><td>Free</td></tr>
+        <tr><td>Nimbalyst</td><td>Free</td></tr>
         <tr class="cost-total"><td><strong>Total</strong></td><td><strong>~&pound;85/month</strong></td></tr>
       </tbody>
     </table>
@@ -526,7 +540,7 @@ cat ~/openclaw-files/test.txt</code></pre>
     </ul>
 
     <h4>Get files automatically</h4>
-    <p>Anything the agent writes lands in <code>~/openclaw-files/</code> on your laptop. Open in Word, Pages, Google Docs &mdash; whatever you like.</p>
+    <p>Anything the agent writes lands in <code>~/openclaw-files/</code> on your laptop. Open in Nimbalyst for beautifully rendered markdown with diagrams and tables, or use Word, Pages, Google Docs &mdash; whatever you prefer.</p>
 
     <h4>Manage via Paperclip</h4>
     <p>Open <code>http://TAILSCALE_IP:4000</code> to see what the agent is working on, set goals, and review its output.</p>
