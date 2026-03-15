@@ -493,6 +493,47 @@ tr:last-child td { border-bottom: none; }
   padding-top: 0.85rem;
 }
 
+/* ── Addon card ────────────────────────────────────────── */
+.addon-card {
+  background: var(--card);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  transition: border-color 0.2s;
+}
+
+.addon-card:hover {
+  border-color: var(--accent);
+}
+
+.addon-card h4 {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+}
+
+.addon-card h4 a {
+  color: var(--fg);
+  text-decoration: none;
+}
+
+.addon-card h4 a:hover {
+  color: var(--accent);
+}
+
+.addon-card p {
+  margin-bottom: 0.5rem;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.addon-card p:last-child {
+  margin-bottom: 0;
+}
+
+.addon-card p:last-child a {
+  font-weight: 600;
+}
+
 /* ── Copy button ───────────────────────────────────────── */
 .copy-btn {
   position: absolute;

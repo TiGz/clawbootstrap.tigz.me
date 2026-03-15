@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Add Paperclip to OpenClaw &mdash; Agent Dashboard &amp; Orchestration</title>
+  <meta name="description" content="Add Paperclip to your OpenClaw setup for task management, heartbeat-driven agent orchestration, and multi-agent teams.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ─── Hero ──────────────────────────────────────────── -->
+<section class="hero">
+  <div class="wrap">
+    <div class="hero-badge">Optional Add-on &middot; Free &amp; Open Source</div>
+    <h1>Add <span class="gradient">Paperclip</span><br>to your OpenClaw</h1>
+    <p class="hero-sub">
+      Turn your AI agent into a managed employee with goals, tasks, heartbeats, and a dashboard. Requires a working <a href="/">OpenClaw setup</a> first.
+    </p>
+  </div>
+</section>
+
+<div class="wrap">
+
+  <div class="callout">
+    <strong>Prerequisite</strong>
+    Complete the <a href="/">main OpenClaw bootstrap guide</a> first. You need a running OpenClaw agent on a VPS with Tailscale before adding Paperclip.
+  </div>
+
+  <!-- ─── What is Paperclip ──────────────────────────── -->
+  <div class="part-header" id="what">
+    <h2>What Paperclip does</h2>
+  </div>
+
+  <div class="step">
+    <p><a href="https://github.com/paperclipai/paperclip" target="_blank">Paperclip</a> is an open-source orchestration platform that manages AI agents like employees in a company:</p>
+    <ul>
+      <li><strong>Task boards</strong> &mdash; assign work, track progress, manage priorities</li>
+      <li><strong>Heartbeats</strong> &mdash; Paperclip wakes your agent on a schedule or when tasks are assigned</li>
+      <li><strong>Governance</strong> &mdash; approval gates, budget limits, audit trails</li>
+      <li><strong>Multi-agent teams</strong> &mdash; org charts, reporting lines, your CEO agent can hire sub-agents</li>
+      <li><strong>Web dashboard</strong> &mdash; accessible over Tailscale from your laptop</li>
+    </ul>
+    <p>Without Paperclip, you chat with your agent directly. With Paperclip, you manage it like a business.</p>
+  </div>
+
+  <!-- ─── The Prompt ─────────────────────────────────── -->
+  <div class="part-header" id="setup">
+    <h2>Setup</h2>
+    <p>Paste this into Claude Code. It handles everything via SSH.</p>
+  </div>
+
+  <div class="step" id="prompt">
+    <div class="step-num">The Prompt</div>
+    <h3>Copy this into Claude Code</h3>
+    <p>Edit the values in <strong>CAPS</strong>, then paste into Claude Code:</p>
+
+    <div class="prompt-block">
+<pre><code>I need you to add Paperclip to my existing OpenClaw setup. Here are my details:
+
+- VPS Tailscale IP: YOUR_TAILSCALE_IP
+- OpenClaw container name: YOUR_OPENCLAW_CONTAINER (find with: docker ps)
+
+Please SSH into the VPS and do the following:
+
+## 1. Install Paperclip (Docker)
+Paperclip runs via Docker Compose. DO NOT install it natively.
+
+- mkdir ~/paperclip &amp;&amp; cd ~/paperclip
+- git clone https://github.com/paperclipai/paperclip.git .
+
+IMPORTANT: The upstream Dockerfile has bugs (as of March 2026). Apply these 3 fixes before building:
+
+Fix 1 - Lockfile: In the Dockerfile, change:
+  "pnpm install --frozen-lockfile" to "pnpm install --no-frozen-lockfile"
+
+Fix 2 - Missing packages: After the line
+  "COPY packages/adapters/pi-local/package.json packages/adapters/pi-local/"
+add these lines:
+  COPY packages/plugins/sdk/package.json packages/plugins/sdk/
+  COPY packages/plugins/create-paperclip-plugin/package.json packages/plugins/create-paperclip-plugin/
+  COPY packages/plugins/examples/ packages/plugins/examples/
+
+Fix 3 - Build order: Change
+  "RUN pnpm --filter @paperclipai/ui build"
+to:
+  RUN pnpm --filter @paperclipai/plugin-sdk build 2>/dev/null; pnpm --filter @paperclipai/ui build
+
+Create docker-compose.override.yml to bind to Tailscale only:
+  services:
+    db:
+      ports: !override
+        - "127.0.0.1:5433:5432"
+    server:
+      ports: !override
+        - "YOUR_TAILSCALE_IP:3100:3100"
+      environment:
+        PAPERCLIP_PUBLIC_URL: "http://YOUR_TAILSCALE_IP:3100"
+
+Create .env with: BETTER_AUTH_SECRET=(generate with: openssl rand -hex 32)
+
+Build and start: docker compose up -d --build
+Run onboard: docker exec paperclip-server-1 pnpm paperclipai onboard --yes
+This prints a CEO invite URL - show it to me so I can open it in my browser.
+
+## 2. Connect Docker networks
+The Paperclip and OpenClaw containers need to talk to each other:
+
+a) Connect them to the same network:
+   docker network connect $(docker inspect YOUR_OPENCLAW_CONTAINER --format '{{range $k, $v := .NetworkSettings.Networks}}{{$k}}{{end}}') paperclip-server-1
+
+b) Add the container hostname to Paperclip's allowed hosts:
+   docker exec paperclip-server-1 pnpm paperclipai allowed-hostname YOUR_OPENCLAW_CONTAINER
+   cd ~/paperclip &amp;&amp; docker compose restart server
+
+c) Verify connectivity:
+   docker exec YOUR_OPENCLAW_CONTAINER curl -s -o /dev/null -w "%{http_code}" http://paperclip-server-1:3100/api/health
+   (Should return 200)
+
+## 3. Register the OpenClaw agent in Paperclip
+
+a) Get the OpenClaw gateway token from your OpenClaw config:
+   The token is in openclaw.json under gateway.auth.token
+
+b) Use the Paperclip API to create the agent (replace values):
+   - Sign in: POST http://YOUR_TAILSCALE_IP:3100/api/auth/sign-in/email
+   - Create agent: POST /api/companies/COMPANY_ID/agents with:
+     {
+       "name": "Your Agent Name",
+       "role": "ceo",
+       "adapterType": "openclaw_gateway",
+       "adapterConfig": {
+         "url": "ws://YOUR_OPENCLAW_CONTAINER:18789",
+         "authToken": "GATEWAY_TOKEN",
+         "paperclipApiUrl": "http://paperclip-server-1:3100",
+         "disableDeviceAuth": true,
+         "waitTimeoutMs": 120000,
+         "sessionKeyStrategy": "issue",
+         "role": "operator",
+         "scopes": ["operator.admin"]
+       }
+     }
+   Include Origin: http://YOUR_TAILSCALE_IP:3100 header on all mutation requests.
+
+## 4. Install Paperclip skills
+Fetch and install the Paperclip skills into the OpenClaw workspace:
+
+   mkdir -p WORKSPACE/skills/paperclip WORKSPACE/skills/paperclip-create-agent
+   curl -s http://YOUR_TAILSCALE_IP:3100/api/skills/paperclip > WORKSPACE/skills/paperclip/SKILL.md
+   curl -s http://YOUR_TAILSCALE_IP:3100/api/skills/paperclip-create-agent > WORKSPACE/skills/paperclip-create-agent/SKILL.md
+
+(Replace WORKSPACE with the actual OpenClaw workspace path)
+
+## 5. Generate agent API key
+The agent needs a JWT to authenticate with the Paperclip API:
+
+a) Read the JWT secret:
+   docker exec paperclip-server-1 cat /paperclip/instances/default/.env | grep PAPERCLIP_AGENT_JWT_SECRET
+
+b) Generate a JWT with these exact claims:
+   - sub: the agent ID from step 3
+   - company_id: the company ID
+   - adapter_type: "openclaw_gateway"
+   - run_id: "persistent-key"
+   - iss: "paperclip"
+   - aud: "paperclip-api"
+   - exp: 1 year from now
+   Algorithm: HS256 with the JWT secret
+
+c) Save to workspace:
+   echo '{"token":"THE_JWT","agentId":"AGENT_ID","companyId":"COMPANY_ID","apiUrl":"http://paperclip-server-1:3100"}' > WORKSPACE/paperclip-claimed-api-key.json
+   chmod 600 WORKSPACE/paperclip-claimed-api-key.json
+
+## 6. Test the integration
+Trigger a wakeup via the API:
+   POST http://YOUR_TAILSCALE_IP:3100/api/agents/AGENT_ID/wakeup
+   with body: {"reason":"Integration test"}
+
+The agent should wake up, read its Paperclip skill, check for assigned tasks, and exit cleanly with a message like "No issues assigned. Heartbeat complete."
+
+Show me the result of the heartbeat run.
+
+Go step by step. Ask me for input when needed (CEO invite URL, etc).</code></pre>
+    </div>
+  </div>
+
+  <!-- ─── What happens ───────────────────────────────── -->
+  <div class="step" id="interactions">
+    <div class="step-num">What happens next</div>
+    <h3>Claude walks you through it</h3>
+    <p>You&rsquo;ll need to interact at two points:</p>
+
+    <div class="interaction-list">
+      <div class="interaction">
+        <div class="interaction-icon">1</div>
+        <div class="interaction-body">
+          <h4>CEO invite URL</h4>
+          <p>Claude will show you a URL like <code>http://TAILSCALE_IP:3100/invite/pcp_bootstrap_...</code> &mdash; open it in your browser to create your Paperclip admin account.</p>
+        </div>
+      </div>
+      <div class="interaction">
+        <div class="interaction-icon">2</div>
+        <div class="interaction-body">
+          <h4>Heartbeat result</h4>
+          <p>After setup, Claude triggers a test heartbeat. You should see the agent wake up, check for tasks, and report back. If it says &ldquo;No issues assigned&rdquo; &mdash; everything is working.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── How it works ───────────────────────────────── -->
+  <div class="part-header" id="how-it-works">
+    <h2>How it works</h2>
+  </div>
+
+  <div class="step">
+    <h4>The heartbeat loop</h4>
+    <p>Paperclip doesn&rsquo;t keep your agent running continuously. Instead, it works in <strong>heartbeats</strong>:</p>
+    <ol>
+      <li>You assign a task in the Paperclip dashboard (or a schedule fires)</li>
+      <li>Paperclip connects to OpenClaw via WebSocket and wakes the agent</li>
+      <li>The agent checks out the task, does the work, and reports back</li>
+      <li>The agent goes idle until the next heartbeat</li>
+    </ol>
+
+    <h4>The Paperclip skill</h4>
+    <p>During setup, a <code>SKILL.md</code> file is installed in your agent&rsquo;s workspace. This teaches the agent the full heartbeat protocol &mdash; how to authenticate, check out tasks, post comments, delegate work, and handle approvals. You don&rsquo;t need to configure anything manually.</p>
+
+    <h4>What you can do in the dashboard</h4>
+    <p>Open <code>http://YOUR_TAILSCALE_IP:3100</code> to:</p>
+    <ul>
+      <li>Create and assign tasks/issues to your agent</li>
+      <li>Watch live heartbeat runs as the agent works</li>
+      <li>Review the agent&rsquo;s comments and status updates</li>
+      <li>Set up schedules for recurring work</li>
+      <li>Add more agents and organise them into teams</li>
+    </ul>
+  </div>
+
+  <!-- ─── Troubleshooting ────────────────────────────── -->
+  <div class="part-header" id="troubleshooting">
+    <h2>Troubleshooting</h2>
+  </div>
+
+  <div class="step">
+    <h4>Paperclip build fails</h4>
+    <p>Make sure you applied all 3 Dockerfile fixes. The most common errors:</p>
+    <ul>
+      <li><code>ERR_PNPM_OUTDATED_LOCKFILE</code> &mdash; Fix 1 not applied (frozen lockfile)</li>
+      <li><code>ERR_PNPM_WORKSPACE_PKG_NOT_FOUND</code> for <code>plugin-sdk</code> &mdash; Fix 2 not applied (missing COPY)</li>
+      <li>Server build fails with TypeScript errors about <code>plugin-sdk</code> &mdash; Fix 3 not applied (build order)</li>
+    </ul>
+
+    <h4>Heartbeat fails with &ldquo;device signature invalid&rdquo;</h4>
+    <p>Make sure <code>disableDeviceAuth: true</code> is set in the agent&rsquo;s adapterConfig. Device auth requires the proper invite-based onboarding flow.</p>
+
+    <h4>Agent says &ldquo;No paperclip-claimed-api-key.json&rdquo;</h4>
+    <p>The API key file wasn&rsquo;t created or is in the wrong location. It must be at <code>WORKSPACE/paperclip-claimed-api-key.json</code> (the OpenClaw workspace root, not a subdirectory).</p>
+
+    <h4>Agent wakes but gets 401 on API calls</h4>
+    <p>The JWT claims are wrong. Double-check: <code>company_id</code> (not <code>companyId</code>), <code>adapter_type</code>, <code>run_id</code>, <code>iss: "paperclip"</code>, <code>aud: "paperclip-api"</code>.</p>
+
+    <h4>Containers can&rsquo;t reach each other</h4>
+    <p>Verify they&rsquo;re on the same Docker network:</p>
+<pre><code>docker network inspect NETWORK_NAME --format '{{range .Containers}}{{.Name}} {{end}}'</code></pre>
+    <p>Both your OpenClaw container and <code>paperclip-server-1</code> should appear.</p>
+
+    <h4>Paperclip returns 403 from inside OpenClaw container</h4>
+    <p>The container hostname isn&rsquo;t in Paperclip&rsquo;s allowed hosts. Run:</p>
+<pre><code>docker exec paperclip-server-1 pnpm paperclipai allowed-hostname YOUR_OPENCLAW_CONTAINER
+docker compose -f ~/paperclip/docker-compose.yml restart server</code></pre>
+  </div>
+
+  <div class="step" style="text-align:center;padding:3rem 0;">
+    <p><a href="/">&larr; Back to the main OpenClaw guide</a></p>
+  </div>
+
+</div><!-- .wrap -->
+
+<footer>
+  <div class="wrap">
+    Built with <a href="https://openclaw.ai" target="_blank">OpenClaw</a> &amp;
+    <a href="https://github.com/paperclipai/paperclip" target="_blank">Paperclip</a>.
+    &mdash; <a href="https://tigz.me">tigz.me</a>
+  </div>
+</footer>
+
+<!-- ─── Copy to clipboard ─────────────────────────────── -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('pre').forEach(pre => {
+    const btn = document.createElement('button');
+    btn.className = 'copy-btn';
+    btn.textContent = 'Copy';
+    btn.setAttribute('aria-label', 'Copy to clipboard');
+    btn.addEventListener('click', async () => {
+      const code = pre.querySelector('code');
+      const text = code ? code.textContent : pre.textContent;
+      try {
+        await navigator.clipboard.writeText(text.trim());
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+      } catch {
+        const ta = document.createElement('textarea');
+        ta.value = text.trim();
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+      }
+    });
+    pre.style.position = 'relative';
+    pre.appendChild(btn);
+  });
+});
+</script>
+
+</body>
+</html>

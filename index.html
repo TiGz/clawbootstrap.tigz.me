@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>OpenClaw Bootstrap &mdash; Your AI Agent in 30 Minutes</title>
-  <meta name="description" content="Step-by-step guide to setting up a personal AI agent with OpenClaw, Claude Max, Paperclip, and Tailscale on your own VPS.">
+  <meta name="description" content="Step-by-step guide to setting up a personal AI agent with OpenClaw, Claude Max, Tailscale, and automatic file sync on your own VPS.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -18,7 +18,7 @@
     <div class="hero-badge">Open Source &middot; ~&pound;85/month total</div>
     <h1>Your own AI agent,<br><span class="gradient">running 24/7</span></h1>
     <p class="hero-sub">
-      A complete guide to setting up OpenClaw on a VPS with Claude Max, Paperclip, secure VPN access, and automatic file sync to your laptop.
+      A complete guide to setting up OpenClaw on a VPS with Claude Max, secure VPN access, and automatic file sync to your laptop.
     </p>
   </div>
 </section>
@@ -32,7 +32,6 @@
         <ul>
           <li>Claude Code + Nimbalyst</li>
           <li>Syncthing</li>
-          <li>Paperclip UI</li>
           <li>WhatsApp / Telegram</li>
         </ul>
       </div>
@@ -46,7 +45,6 @@
         <ul>
           <li>OpenClaw</li>
           <li>Syncthing</li>
-          <li>Paperclip</li>
           <li>Claude Max token</li>
         </ul>
       </div>
@@ -148,7 +146,7 @@
       <p>After ordering, IONOS will email you a <strong>VPS IP address</strong> (like <code>194.35.xx.xx</code>) and a <strong>root password</strong>. Save both &mdash; you need them soon.</p>
       <div class="callout">
         <strong>Why not the cheapest plan?</strong>
-        The 2 GB plan works for bare OpenClaw, but you&rsquo;re running OpenClaw + Paperclip + Syncthing. 8 GB keeps everything comfortable.
+        The 2 GB plan works for bare OpenClaw, but you&rsquo;re running OpenClaw + Syncthing + headroom for add-ons. 8 GB keeps everything comfortable.
       </div>
     </div>
 
@@ -286,11 +284,10 @@ ssh-copy-id root@100.x.x.x</code></pre>
       <li><strong>Mac / Windows / Linux:</strong> Download from <a href="https://nimbalyst.com" target="_blank">nimbalyst.com</a></li>
       <li><strong>iOS:</strong> Available on the App Store for managing sessions on the go</li>
     </ul>
-    <p>Once installed, open Nimbalyst and connect it to your Claude Code instance. It&rsquo;ll automatically detect your sessions and projects.</p>
 
     <div class="callout info">
       <strong>Why Nimbalyst?</strong>
-      When your agent writes a business proposal or research document, Nimbalyst renders it beautifully &mdash; formatted markdown, tables, diagrams. Much nicer than reading raw <code>.md</code> files. It&rsquo;s also where you&rsquo;ll manage your Claude Code sessions visually instead of juggling terminal windows.
+      When your agent writes a business proposal or research document, Nimbalyst renders it beautifully &mdash; formatted markdown, tables, diagrams. Much nicer than reading raw <code>.md</code> files.
     </div>
   </div>
 
@@ -347,7 +344,7 @@ ssh-copy-id root@100.x.x.x</code></pre>
     <p>Open your terminal and type <code>claude</code> to start Claude Code. Then paste this prompt (edit the values in <strong>CAPS</strong> first):</p>
 
     <div class="prompt-block">
-<pre><code>I need you to set up a complete OpenClaw AI agent stack on my VPS. Here are my details:
+<pre><code>I need you to set up OpenClaw on my VPS. Here are my details:
 
 - VPS Tailscale IP: YOUR_TAILSCALE_IP (e.g. 100.64.0.2)
 - My username for the VPS: YOUR_NAME (lowercase, no spaces)
@@ -373,103 +370,32 @@ Please SSH into the VPS at the Tailscale IP as root and do the following:
 - Start the gateway with docker compose up -d
 - Verify: docker ps should show the gateway container as "Up"
 
-## 3. Install Paperclip (Docker)
-Paperclip runs via Docker Compose alongside OpenClaw. DO NOT install it natively.
-
-- mkdir ~/paperclip &amp;&amp; cd ~/paperclip
-- git clone https://github.com/paperclipai/paperclip.git .
-
-IMPORTANT: The upstream Dockerfile has bugs. Apply these 3 fixes before building:
-
-Fix 1 - Lockfile: In the Dockerfile, change "pnpm install --frozen-lockfile" to "pnpm install --no-frozen-lockfile"
-
-Fix 2 - Missing packages: After the line "COPY packages/adapters/pi-local/package.json packages/adapters/pi-local/", add:
-  COPY packages/plugins/sdk/package.json packages/plugins/sdk/
-  COPY packages/plugins/create-paperclip-plugin/package.json packages/plugins/create-paperclip-plugin/
-  COPY packages/plugins/examples/ packages/plugins/examples/
-
-Fix 3 - Build order: Change "RUN pnpm --filter @paperclipai/ui build" to:
-  RUN pnpm --filter @paperclipai/plugin-sdk build 2>/dev/null; pnpm --filter @paperclipai/ui build
-
-Then create docker-compose.override.yml to bind to Tailscale only:
-  services:
-    db:
-      ports: !override
-        - "127.0.0.1:5433:5432"
-    server:
-      ports: !override
-        - "YOUR_TAILSCALE_IP:3100:3100"
-      environment:
-        PAPERCLIP_PUBLIC_URL: "http://YOUR_TAILSCALE_IP:3100"
-
-Create .env with: BETTER_AUTH_SECRET=(generate with: openssl rand -hex 32)
-
-Build and start: docker compose up -d --build
-Run onboard: docker exec paperclip-server-1 pnpm paperclipai onboard --yes
-This prints a CEO invite URL - show it to me so I can open it in my browser.
-
-## 4. Connect Paperclip to OpenClaw
-This is the critical integration step:
-
-a) Connect Docker networks so containers can talk:
-   docker network connect $(docker inspect OPENCLAW_CONTAINER --format '{{range $k, $v := .NetworkSettings.Networks}}{{$k}}{{end}}') paperclip-server-1
-
-b) Add container hostname to Paperclip's allowed hosts:
-   docker exec paperclip-server-1 pnpm paperclipai allowed-hostname OPENCLAW_CONTAINER
-   docker compose -f ~/paperclip/docker-compose.yml restart server
-
-c) Get the OpenClaw gateway token from the OpenClaw config (openclaw.json -> gateway.auth.token)
-
-d) In the Paperclip UI, go to Settings > Invites > "Generate OpenClaw Invite Prompt"
-   This creates a block of text. Show it to me and I'll paste it into my agent's chat.
-   The agent will self-onboard: submit a join request, claim an API key, and install the Paperclip skill.
-
-e) If doing it manually instead (via API), create the agent with:
-   - adapterType: "openclaw_gateway"
-   - adapterConfig.url: "ws://OPENCLAW_CONTAINER:18789"
-   - adapterConfig.authToken: (the gateway token)
-   - adapterConfig.paperclipApiUrl: "http://paperclip-server-1:3100"
-   - adapterConfig.disableDeviceAuth: true (unless using invite flow)
-   - adapterConfig.sessionKeyStrategy: "issue"
-
-f) Install Paperclip skills into OpenClaw workspace:
-   curl -s http://paperclip-server-1:3100/api/skills/paperclip > WORKSPACE/skills/paperclip/SKILL.md
-   curl -s http://paperclip-server-1:3100/api/skills/paperclip-create-agent > WORKSPACE/skills/paperclip-create-agent/SKILL.md
-
-g) Generate an agent API key JWT using the PAPERCLIP_AGENT_JWT_SECRET from /paperclip/instances/default/.env
-   Claims must include: sub (agentId), company_id, adapter_type: "openclaw_gateway", run_id: "persistent-key", iss: "paperclip", aud: "paperclip-api"
-   Save as WORKSPACE/paperclip-claimed-api-key.json with: {"token":"JWT","agentId":"...","companyId":"...","apiUrl":"http://paperclip-server-1:3100"}
-
-h) Test: trigger a wakeup via POST /api/agents/AGENT_ID/wakeup - the agent should wake, check for tasks, and exit cleanly.
-
-## 5. Connect GitHub
+## 3. Connect GitHub
 - Configure git with my name and email
 - Generate an SSH key on the VPS
 - Show me the public key so I can add it to GitHub
 - Link the OpenClaw workspace directory to my private repo
 - Set up a cron job or git hook to auto-push workspace changes
 
-## 6. Install Syncthing
+## 4. Install Syncthing
 - Install Syncthing on the VPS
 - Set up as a systemd service running as my user
 - Create ~/openclaw-files/ as a shared directory
 - Configure Syncthing to only listen on the Tailscale interface
 - Show me the device ID so I can pair it with my laptop
 
-## 7. Lock down security
+## 5. Lock down security
 - Set up UFW firewall: allow SSH only from Tailscale range (100.64.0.0/10)
 - Disable root password login via SSH
-- Ensure all services (Paperclip on 3100, Syncthing UI on 8384) only bind to the Tailscale IP
+- Ensure all services (Syncthing UI on 8384) only bind to the Tailscale IP
 
-## 8. Verify everything
-- docker ps: OpenClaw gateway + Paperclip server + Paperclip DB all "Up"
-- Paperclip dashboard loads at http://YOUR_TAILSCALE_IP:3100
+## 6. Verify everything
+- docker ps: OpenClaw gateway is "Up"
 - Send a test message to agent via WhatsApp/Telegram
-- Trigger a Paperclip heartbeat - agent should wake and respond
 - Syncthing is running and ready to pair
 - GitHub workspace backup is pushing
 
-Go step by step. Ask me for input when needed (setup-token, QR code scanning, GitHub key approval, Paperclip invite URL, etc).</code></pre>
+Go step by step. Ask me for input when needed (setup-token, QR code scanning, GitHub key approval, etc).</code></pre>
     </div>
   </div>
 
@@ -497,26 +423,12 @@ Go step by step. Ask me for input when needed (setup-token, QR code scanning, Gi
       <div class="interaction">
         <div class="interaction-icon">3</div>
         <div class="interaction-body">
-          <h4>Paperclip CEO invite</h4>
-          <p>Claude will show you a URL like <code>http://TAILSCALE_IP:3100/invite/pcp_bootstrap_...</code> &mdash; open it in your browser to create your admin account.</p>
-        </div>
-      </div>
-      <div class="interaction">
-        <div class="interaction-icon">4</div>
-        <div class="interaction-body">
-          <h4>Paperclip agent onboarding</h4>
-          <p>In the Paperclip dashboard, generate an OpenClaw invite prompt. Claude will tell you to paste it into your agent&rsquo;s WhatsApp chat so the agent can self-enroll.</p>
-        </div>
-      </div>
-      <div class="interaction">
-        <div class="interaction-icon">5</div>
-        <div class="interaction-body">
           <h4>GitHub SSH key</h4>
           <p>Claude will show you a public key. Copy it, go to <a href="https://github.com/settings/ssh/new" target="_blank">github.com/settings/ssh/new</a>, paste it in, and click &ldquo;Add SSH key&rdquo;.</p>
         </div>
       </div>
       <div class="interaction">
-        <div class="interaction-icon">6</div>
+        <div class="interaction-icon">4</div>
         <div class="interaction-body">
           <h4>Syncthing pairing</h4>
           <p>Claude will show you a Syncthing device ID. You&rsquo;ll add this in the Syncthing app on your laptop to pair the devices.</p>
@@ -565,8 +477,6 @@ tcp://100.x.x.x:22000</code></pre>
     <p>Run through this checklist:</p>
     <ul class="checklist">
       <li>Send a message to your agent via WhatsApp/Telegram &mdash; does it reply?</li>
-      <li>Open <code>http://YOUR_TAILSCALE_IP:3100</code> &mdash; does the Paperclip dashboard load?</li>
-      <li>Trigger a heartbeat in Paperclip &mdash; does the agent wake up and check for tasks?</li>
       <li>Create a test file on the VPS &mdash; does it appear on your laptop via Syncthing?</li>
     </ul>
 
@@ -596,7 +506,6 @@ cat ~/openclaw-files/test.txt</code></pre>
         <tr><td>IONOS VPS (M plan)</td><td>~&pound;5/month</td></tr>
         <tr><td>Tailscale</td><td>Free</td></tr>
         <tr><td>Syncthing</td><td>Free</td></tr>
-        <tr><td>Paperclip</td><td>Free (open source)</td></tr>
         <tr><td>GitHub (private repo)</td><td>Free</td></tr>
         <tr><td>Nimbalyst</td><td>Free</td></tr>
         <tr class="cost-total"><td><strong>Total</strong></td><td><strong>~&pound;85/month</strong></td></tr>
@@ -624,14 +533,27 @@ cat ~/openclaw-files/test.txt</code></pre>
     <h4>Get files automatically</h4>
     <p>Anything the agent writes lands in <code>~/openclaw-files/</code> on your laptop. Open in Nimbalyst for beautifully rendered markdown with diagrams and tables, or use Word, Pages, Google Docs &mdash; whatever you prefer.</p>
 
-    <h4>Manage via Paperclip</h4>
-    <p>Open <code>http://TAILSCALE_IP:3100</code> to see what the agent is working on, set goals, and review its output.</p>
-
     <h4>Customise</h4>
     <p>Give it a personality, specific skills, and recurring tasks. Edit <code>SOUL.md</code> in the workspace to define who your agent is.</p>
 
     <h4>Scale up</h4>
-    <p>Add more agents via Paperclip &mdash; it supports multi-agent teams with org charts, budgets, and reporting lines.</p>
+    <p>Ready to manage your agent with goals, task boards, and governance? Add <a href="paperclip.html">Paperclip</a> &mdash; an open-source dashboard that turns your agent into a managed employee.</p>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- Add-ons                                             -->
+  <!-- ═══════════════════════════════════════════════════ -->
+
+  <div class="part-header" id="addons">
+    <h2>Optional add-ons</h2>
+  </div>
+
+  <div class="step">
+    <div class="addon-card">
+      <h4><a href="paperclip.html">Paperclip &mdash; Agent Dashboard &amp; Orchestration</a></h4>
+      <p>Turn your OpenClaw agent into a managed employee. Set company goals, assign tasks on a kanban board, track heartbeats, and scale to multi-agent teams with org charts and budgets. <strong>Free, open source.</strong></p>
+      <p><a href="paperclip.html">View setup guide &rarr;</a></p>
+    </div>
   </div>
 
   <!-- ═══════════════════════════════════════════════════ -->
@@ -657,8 +579,9 @@ cat ~/openclaw-files/test.txt</code></pre>
     <h4>VPS running slow</h4>
     <p>SSH in and run <code>free -h</code>. If under 1 GB free, consider upgrading the IONOS plan.</p>
 
-    <h4>Can&rsquo;t access Paperclip or Syncthing UI</h4>
-    <p>Make sure you&rsquo;re using the Tailscale IP (<code>100.x.x.x</code>), not the public IP. These services only listen on the private network.</p>
+    <h4>SSH connections dropping</h4>
+    <p>Your VPS may have aggressive SSH rate limiting. Fix it:</p>
+<pre><code>ssh root@YOUR_TAILSCALE_IP 'echo "MaxStartups 50:30:100" >> /etc/ssh/sshd_config &amp;&amp; systemctl restart sshd'</code></pre>
   </div>
 
 </div><!-- .wrap -->
@@ -666,7 +589,6 @@ cat ~/openclaw-files/test.txt</code></pre>
 <footer>
   <div class="wrap">
     Built with <a href="https://openclaw.ai" target="_blank">OpenClaw</a>,
-    <a href="https://github.com/paperclipai/paperclip" target="_blank">Paperclip</a>,
     <a href="https://tailscale.com" target="_blank">Tailscale</a> &amp;
     <a href="https://syncthing.net" target="_blank">Syncthing</a>.
     &mdash; <a href="https://tigz.me">tigz.me</a>
@@ -684,18 +606,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     btn.addEventListener('click', async () => {
       const code = pre.querySelector('code');
-      // Get text content, stripping HTML tags
       const text = code ? code.textContent : pre.textContent;
       try {
         await navigator.clipboard.writeText(text.trim());
         btn.textContent = 'Copied!';
         btn.classList.add('copied');
-        setTimeout(() => {
-          btn.textContent = 'Copy';
-          btn.classList.remove('copied');
-        }, 2000);
+        setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
       } catch {
-        // Fallback for older browsers
         const ta = document.createElement('textarea');
         ta.value = text.trim();
         ta.style.position = 'fixed';
@@ -706,10 +623,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.removeChild(ta);
         btn.textContent = 'Copied!';
         btn.classList.add('copied');
-        setTimeout(() => {
-          btn.textContent = 'Copy';
-          btn.classList.remove('copied');
-        }, 2000);
+        setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
       }
     });
 
